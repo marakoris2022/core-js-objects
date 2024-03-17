@@ -315,38 +315,19 @@ function sortCitiesArray(arr) {
   return newArr;
 }
 
-/**
- * Groups elements of the specified array by key.
- * Returns multimap of keys extracted from array elements via keySelector callback
- * and values extracted via valueSelector callback.
- * See: https://en.wikipedia.org/wiki/Multimap
- *
- * @param {array} array
- * @param {Function} keySelector
- * @param {Function} valueSelector
- * @return {Map}
- *
- * @example
- *   group([
- *      { country: 'Belarus', city: 'Brest' },
- *      { country: 'Russia', city: 'Omsk' },
- *      { country: 'Russia', city: 'Samara' },
- *      { country: 'Belarus', city: 'Grodno' },
- *      { country: 'Belarus', city: 'Minsk' },
- *      { country: 'Poland', city: 'Lodz' }
- *     ],
- *     item => item.country,
- *     item => item.city
- *   )
- *            =>
- *   Map {
- *    "Belarus" => ["Brest", "Grodno", "Minsk"],
- *    "Russia" => ["Omsk", "Samara"],
- *    "Poland" => ["Lodz"]
- *   }
- */
-function group(/* array, keySelector, valueSelector */) {
-  throw new Error('Not implemented');
+function group(array, keySelector, valueSelector) {
+  const resultMap = new Map();
+  array.forEach((item) => {
+    const key = keySelector(item);
+    const value = valueSelector(item);
+    if (resultMap.has(key)) {
+      resultMap.get(key).push(value);
+    } else {
+      resultMap.set(key, [value]);
+    }
+  });
+
+  return resultMap;
 }
 
 /**
@@ -404,32 +385,57 @@ function group(/* array, keySelector, valueSelector */) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  selector: '',
+
+  addSelector(value, order) {
+    if (this.order && this.order > order) {
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
+    }
+    if (this.order && this.order === order && [1, 2, 6].includes(order)) {
+      throw new Error(
+        'Element, id and pseudo-element should not occur more then one time inside the selector'
+      );
+    }
+    const object = { ...this };
+    object.order = order;
+    object.selector = this.selector + value;
+    return object;
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    return this.addSelector(value, 1);
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    return this.addSelector(`#${value}`, 2);
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    return this.addSelector(`.${value}`, 3);
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    return this.addSelector(`[${value}]`, 4);
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    return this.addSelector(`:${value}`, 5);
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    return this.addSelector(`::${value}`, 6);
+  },
+
+  combine(selector1, combinator, selector2) {
+    const object = { ...this };
+    object.selector = `${selector1.selector} ${combinator} ${selector2.selector}`;
+    return object;
+  },
+
+  stringify() {
+    return this.selector;
   },
 };
 
